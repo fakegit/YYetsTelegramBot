@@ -7,9 +7,11 @@ from telebot import types
 
 import config
 import yyetsBot
+import alifacepay
 
 TOKEN = os.environ.get('TOKEN') or config.TGBOT_TOKEN
 bot = telebot.TeleBot(TOKEN)
+logger = config.setup_log()
 
 
 def is_number(str):
@@ -41,7 +43,8 @@ def send_welcome(message):
 def send_help(message):
     bot.send_chat_action(message.chat.id, 'typing')
     bot.send_message(message.chat.id,
-                     '''不会使用？可以查看为你们录制的视频 <a href='https://cdn.jsdelivr.net/gh/AlphaBrock/md_img/macos/20200815001650.mp4'>戳我</a>''',
+                     '''不会使用？可以查看为你们录制的视频 \n<a href='https://cdn.jsdelivr.net/gh/AlphaBrock/md_img/macos/20200815222225.mp4'>戳我</a>\n'''
+                     '''机器人无法使用或者报错？@AlphaBrock 或者<a href='https://github.com/AlphaBrock/YYetsTelegramBot/issues'>Github issues</a>''',
                      parse_mode='html')
 
 
@@ -52,6 +55,20 @@ def send_credits(message):
     <a href="http://www.zmz2019.com/">人人影视</a>''', parse_mode='html')
 
 
+# @bot.message_handler(commands=['donate'])
+# def send_help(message):
+#     bot.send_chat_action(message.chat.id, 'typing')
+#     btn_list = []
+#     size = 3
+#     markup = types.InlineKeyboardMarkup(size)
+#     btn_list.append(types.InlineKeyboardButton("0.1元", callback_data='donate:0.11'))
+#     btn_list.append(types.InlineKeyboardButton("0.5元", callback_data='donate:0.5'))
+#     btn_list.append(types.InlineKeyboardButton("1元", callback_data='donate:1'))
+#     markup.add(btn_list[0], btn_list[1], btn_list[2])
+#     bot.send_message(message.chat.id, "最近有点穷，捐赠点？")
+#     bot.send_photo(message.chat.id, photo="https://cdn.jsdelivr.net/gh/AlphaBrock/md_img/macos/20200815184151.png", reply_markup=markup)
+
+
 @bot.message_handler(func=lambda m: True)
 def talk_with_user(message):
     """
@@ -59,7 +76,7 @@ def talk_with_user(message):
     :param message:
     :return:
     """
-    config.logger1.info("talk_with_user 获取到用户:{}，输入数据:{}".format(message.chat.id, message.text))
+    logger.info("获取到用户:{}，输入数据:{}".format(message.chat.id, message.text))
     img_data = yyetsBot.download_poster(message.text)
     if img_data is None:
         bot.send_chat_action(message.chat.id, 'typing')
@@ -81,8 +98,26 @@ def talk_with_user(message):
 
 @bot.callback_query_handler(func=lambda call: call.data != 'fix')
 def send_video_link(call):
-    config.logger1.info('send_video_link 接收到用户选择查看下载链接信息:{}'.format(call.data))
+    logger.info('接收到用户选择查看下载链接信息:{}'.format(call.data))
     data = call.data.split(':')
+    # if "donate" in data:
+    #     donate_money = data[1]
+    #     out_trade_no = alifacepay.get_trade_id()
+    #     qr_code = alifacepay.donate(donate_money, out_trade_no)
+    #     bot.send_chat_action(call.message.chat.id, 'typing')
+    #     if qr_code == "Failed":
+    #         bot.send_message(call.message.chat.id, "Ops，支付网关异常，无法生成捐赠收款码!")
+    #     else:
+    #         bot.send_message(call.message.chat.id, "请在5分钟支付，超时将关闭捐赠通道")
+    #         bot.send_photo(call.message.chat.id, photo='http://api.qrserver.com/v1/create-qr-code/?data={}'.format(qr_code))
+    #         status = alifacepay.check_donate(out_trade_no)
+    #         if status == "支付成功":
+    #             bot.send_message(call.message.chat.id, "感谢你的捐赠，好人一生平安")
+    #         elif status == "超时未支付":
+    #             bot.send_message(call.message.chat.id, "5分钟未支付，关闭捐赠通道")
+    #         else:
+    #             bot.send_message(call.message.chat.id, "查询失败，联系下 @Alphabrock ？")
+    # else:
     if len(data) == 2:
         # if "season" in data:
         videoID = data[0]
@@ -157,6 +192,6 @@ def send_video_link(call):
 
 if __name__ == '__main__':
     try:
-        bot.polling(none_stop=True)
+        bot.polling(none_stop=True, timeout=200)
     except Exception as e:
-        config.logger1.exception("__main__ Telegram Bot运行异常，抛出信息:{}".format(e))
+        logger.exception("__main__ Telegram Bot运行异常，抛出信息:{}".format(e))

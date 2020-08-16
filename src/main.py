@@ -69,6 +69,48 @@ def send_credits(message):
 #     bot.send_photo(message.chat.id, photo="https://cdn.jsdelivr.net/gh/AlphaBrock/md_img/macos/20200815184151.png", reply_markup=markup)
 
 
+@bot.message_handler(commands=['top'])
+def top_video_list(message):
+    bot.send_chat_action(message.chat.id, 'typing')
+    data = message.text.split(' ')
+    if data[0] != "/top":
+        bot.send_message(message.chat.id, "使用方法如下:\n"
+                         "默认查询前10排行剧：`/top`\n"
+                         "查询指定排行剧：`/top 5`", parse_mode='Markdown')
+    else:
+        top_type_list = ["今日", "本月", "电影", "日剧", "新剧", "总榜"]
+        if len(data) == 1:
+            top_num = 10
+            markup = types.InlineKeyboardMarkup()
+            for i in range(len(top_type_list)):
+                markup.add(types.InlineKeyboardButton("{}".format(top_type_list[i]),
+                                                      callback_data="{}:{}:{}:{}:{}".format("top",
+                                                                                            top_type_list[i],
+                                                                                            top_num, "1", "1")))
+            bot.send_message(message.chat.id, "请选择你需要查看哪种类型排行!", reply_markup=markup)
+        elif len(data) == 2:
+            top_num = data[1]
+            check = is_number(top_num)
+            if check is False:
+                bot.send_message(message.chat.id, "只允许输入数字😯，使用方法如下:\n"
+                                          "查询指定排行剧：`/top 5`", parse_mode='Markdown')
+            else:
+                if int(top_num) > 50:
+                    bot.send_message(message.chat.id, "为了确保正常查询，请不要查询超top50的排行")
+                else:
+                    markup = types.InlineKeyboardMarkup()
+                    for i in range(len(top_type_list)):
+                        markup.add(types.InlineKeyboardButton("{}".format(top_type_list[i]),
+                                                              callback_data="{}:{}:{}:{}:{}".format("top",
+                                                                                                    top_type_list[i],
+                                                                                                    top_num, "1", "1")))
+                    bot.send_message(message.chat.id, "请选择你需要查看哪种类型排行!", reply_markup=markup)
+        else:
+            bot.send_message(message.chat.id, "输入有误，使用方法如下:\n"
+                                              "默认查询前10排行剧：`/top`\n"
+                                              "查询指定排行剧：`/top 5`", parse_mode='Markdown')
+
+
 @bot.message_handler(func=lambda m: True)
 def talk_with_user(message):
     """
@@ -186,6 +228,16 @@ def send_video_link(call):
             info = "资源名称: " + name + "\n" + "文件大小: " + size + "\n" + "下载类型: " + way_name + "\n" + "下载地址: " + address
             bot.answer_callback_query(call.id, '你要的信息取回来惹')
             bot.send_message(call.message.chat.id, info)
+    elif len(data) == 5:
+        top_type = data[1]
+        top_num = data[2]
+        top_data = yyetsBot.get_top_list(top_type, top_num)
+        if top_data is None:
+            bot.send_chat_action(call.message.chat.id, 'typing')
+            bot.send_message(call.message.chat.id, "查询无结果呢!")
+        else:
+            bot.answer_callback_query(call.id, '你要的信息取回来惹')
+            bot.send_message(call.message.chat.id, top_data)
     else:
         pass
 

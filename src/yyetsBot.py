@@ -74,6 +74,35 @@ def search_resource(video_id):
     else:
         return text['data'].get('list')
 
+def search_top_resource(top_num):
+    """
+    这里根据ID查询资源信息，获取包含了剧集，下载链接信息
+    :param video_id:
+    :return:
+    """
+    url = "http://pc.zmzapi.com/index.php"
+
+    params = {
+        "g": "api/pv3",
+        "m": "index",
+        "client": "5",
+        "accesskey": "519f9cab85c8059d17544947k361a827",
+        "a": "hot",
+        "limit": "{}".format(top_num)
+    }
+    headers = {
+        'User-Agent': '{}'.format(random.choice(config.UserAgent))
+    }
+
+    response = requests.request("GET", url, params=params, headers=headers)
+    text = json.loads(response.text)
+    # 处理返回数据
+    if text['status'] != 1:
+        logger.warning("搜索top{}无结果，返回如下信息:{}".format(top_num, response.text))
+        return None
+    else:
+        return text['data']
+
 
 def download_poster(name):
     """
@@ -262,6 +291,52 @@ def get_movie_link(videoID):
                 return iter_video_link('movie', item.get('episodes'))
     except Exception as e:
         logger.exception('资源ID:{}，获取电影下载链接失败，抛出异常:{}'.format(videoID, e))
+
+
+def get_top_list(top_type, top_num):
+    """
+    获取下排行影视
+    :param top_type:
+    :param top_num:
+    :return:
+    """
+    data = search_top_resource(top_num)
+    if data is None:
+        return None
+    else:
+        top_list = []
+        if top_type == "总榜":
+            total_list = data.get('total_list')
+            for i in range(len(total_list)):
+                cnname = str(i + 1) + ". " + str(total_list[i].get('cnname'))
+                print(cnname)
+                top_list.append(cnname)
+        elif top_type == "本月":
+            movie_list = data.get('movie_list')
+            for i in range(len(movie_list)):
+                cnname = str(i + 1) + ". " + str(movie_list[i].get('cnname'))
+                top_list.append(cnname)
+        elif top_type == "电影":
+            movie_total = data.get('movie_total')
+            for i in range(len(movie_total)):
+                cnname = str(i + 1) + ". " + str(movie_total[i].get('cnname'))
+                top_list.append(cnname)
+        elif top_type == "日剧":
+            japan_list = data.get('japan_list')
+            for i in range(len(japan_list)):
+                cnname = str(i + 1) + ". " + str(japan_list[i].get('cnname'))
+                top_list.append(cnname)
+        elif top_type == "新剧":
+            new_list = data.get('new_list')
+            for i in range(len(new_list)):
+                cnname = str(i + 1) + ". " + str(new_list[i].get('cnname'))
+                top_list.append(cnname)
+        elif top_type == "今日":
+            today_list = data.get('today_list')
+            for i in range(len(today_list)):
+                cnname = str(i + 1) + ". " + str(today_list[i].get('cnname'))
+                top_list.append(cnname)
+        return '\n'.join(top_list)
 
 
 if __name__ == '__main__':
